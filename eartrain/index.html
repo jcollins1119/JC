@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EarTrain — Old Time</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #1a1612;
+      color: #e8dfc8;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+
+    h1 { font-size: 2rem; letter-spacing: 0.05em; color: #f0e6c8; margin-bottom: 0.25rem; }
+    .subtitle { font-size: 0.85rem; color: #8a7d65; margin-bottom: 2rem; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .card {
+      background: #242018;
+      border: 1px solid #3a3228;
+      border-radius: 8px;
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 760px;
+      margin-bottom: 1rem;
+    }
+
+    /* ── Controls ── */
+    .controls { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin-bottom: 1.5rem; }
+    .control-group { display: flex; flex-direction: column; gap: 0.35rem; }
+
+    label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: #8a7d65; }
+
+    select, input[type="number"] {
+      background: #1a1612; border: 1px solid #3a3228; color: #e8dfc8;
+      border-radius: 4px; padding: 0.4rem 0.6rem; font-size: 0.92rem; font-family: inherit;
+    }
+    select { cursor: pointer; }
+    input[type="number"] { width: 68px; }
+
+    .toggle-label {
+      display: flex; align-items: center; gap: 0.4rem; cursor: pointer;
+      font-size: 0.85rem; color: #8a7d65; padding-top: 1.4rem; white-space: nowrap;
+    }
+    .toggle-label input[type="checkbox"] { accent-color: #6b5a3e; width: 14px; height: 14px; cursor: pointer; }
+
+    /* ── Input ── */
+    .notation-area {
+      width: 100%; background: #12100e; border: 1px solid #3a3228; border-radius: 6px;
+      color: #f0e6c8; font-family: 'Courier New', monospace; font-size: 1.15rem;
+      padding: 0.75rem 1rem; line-height: 1.9; resize: vertical; min-height: 90px;
+      outline: none; transition: border-color 0.15s;
+    }
+    .notation-area:focus { border-color: #6b5a3e; }
+    .notation-area::placeholder { color: #3a3228; }
+
+    /* ── Global actions ── */
+    .global-actions { display: flex; gap: 0.75rem; align-items: center; margin-top: 1rem; }
+
+    .btn { padding: 0.5rem 1.2rem; border-radius: 6px; border: none; font-family: inherit; font-size: 0.92rem; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
+    .btn-play { background: #6b5a3e; color: #f0e6c8; }
+    .btn-play:hover { background: #7d6a4a; }
+    .btn-stop { background: #5a2e2e; color: #f0c8c8; }
+    .btn-stop:hover { background: #6a3838; }
+    .btn-clear { background: transparent; color: #5a4e38; border: 1px solid #3a3228; }
+    .btn-clear:hover { color: #8a7d65; border-color: #5a4e38; }
+
+    .btn-play-section {
+      background: #2e3a2e; color: #9ad4a0; border: 1px solid #3a5e3a;
+      border-radius: 5px; padding: 0.2rem 0.6rem; font-size: 0.75rem;
+      cursor: pointer; font-family: inherit; transition: background 0.12s;
+    }
+    .btn-play-section:hover { background: #3a4a3a; }
+    .btn-play-section.playing { background: #5a2e2e; border-color: #8a4a4a; color: #f0c8c8; }
+
+    .playback-info { font-size: 0.78rem; color: #5a4e38; margin-left: auto; font-family: 'Courier New', monospace; }
+
+    /* ── Section display ── */
+    .sections-display { margin-top: 0.75rem; }
+    .section-block { margin-bottom: 0.75rem; }
+    .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+    .section-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #5a4e38; font-family: 'Courier New', monospace; }
+
+    .section-divider {
+      border-top: 1px dashed #3a3228; margin: 0.75rem 0; position: relative;
+    }
+    .section-divider::after {
+      content: '//'; position: absolute; top: -0.6rem; left: 50%;
+      transform: translateX(-50%); background: #242018; padding: 0 0.5rem;
+      font-size: 0.7rem; color: #4a3e2e; font-family: 'Courier New', monospace;
+    }
+
+    .bars-row { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 0.5rem; }
+
+    .bar-group { display: flex; flex-direction: column; gap: 0.2rem; }
+
+    .bar-chips {
+      display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center;
+      min-height: 42px; padding: 2px 0;
+    }
+
+    .bar-divider { width: 1px; background: #3a3228; align-self: stretch; margin: 0 0.1rem; min-height: 42px; }
+
+    /* beat counter */
+    .beat-counter {
+      font-size: 0.68rem; font-family: 'Courier New', monospace;
+      padding: 0.1rem 0.35rem; border-radius: 3px; align-self: flex-start; white-space: nowrap;
+    }
+    .beat-counter.exact  { color: #7ab87e; background: #1a2a1a; border: 1px solid #3a5a3a; }
+    .beat-counter.short  { color: #c8a840; background: #2a2010; border: 1px solid #5a4a20; }
+    .beat-counter.over   { color: #c06060; background: #2a1a1a; border: 1px solid #5a3030; }
+    .beat-counter.empty  { color: #3a3228; background: transparent; border: 1px dashed #2a2418; }
+
+    /* ── Note chips ── */
+    .note-chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 28px; height: 34px; border-radius: 5px;
+      font-family: 'Courier New', monospace; font-size: 0.88rem; font-weight: bold;
+      border: 1px solid transparent; transition: background 0.1s, transform 0.06s;
+      position: relative; padding: 0 5px;
+    }
+    .note-chip::after {
+      content: attr(data-dur-dots); position: absolute; bottom: 2px; left: 50%;
+      transform: translateX(-50%); font-size: 0.4rem; letter-spacing: 1px; opacity: 0.65; line-height: 1;
+    }
+    .note-chip.octave-0  { background: #2e2a20; border-color: #5a4e38; color: #d4c49a; }
+    .note-chip.octave-1  { background: #1e2e1e; border-color: #3a5e3a; color: #9ad4a0; }
+    .note-chip.octave--1 { background: #2e1e2e; border-color: #5e3a5e; color: #c49ad4; }
+    .note-chip.octave-2  { background: #1a2a1a; border-color: #305a30; color: #7ac87e; }
+    .note-chip.octave--2 { background: #2a1a2a; border-color: #5a305a; color: #b07ac8; }
+    .note-chip.flat { font-style: italic; }
+    .note-chip.triplet { border-style: dashed; opacity: 0.92; }
+    .note-chip.triplet-start::before {
+      content: '3'; position: absolute; top: -12px; left: 50%;
+      transform: translateX(-50%); font-size: 0.58rem; opacity: 0.55; font-style: normal;
+    }
+    .note-chip.active { transform: scale(1.18); box-shadow: 0 0 9px rgba(240, 200, 100, 0.45); }
+
+    /* auto-fill extension chip */
+    .fill-chip {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 34px; border-radius: 5px; padding: 0 6px;
+      font-family: 'Courier New', monospace; font-size: 0.7rem;
+      border: 1px dotted #4a3e2e; color: #5a4e38; background: #1e1c16;
+      letter-spacing: 0.02em; white-space: nowrap;
+    }
+
+    .barline-chip { color: #4a3e2e; font-size: 1rem; font-family: 'Courier New', monospace; padding: 0 0.15rem; user-select: none; }
+    .extra-beat-chip { color: #6b5a3e; font-size: 0.75rem; border: 1px dashed #4a3a28; border-radius: 4px; padding: 0.1rem 0.35rem; font-family: 'Courier New', monospace; }
+    .parse-error { font-size: 0.78rem; color: #c46060; font-family: 'Courier New', monospace; padding: 0.1rem 0.2rem; }
+
+    /* ── Syntax ref ── */
+    .syntax-ref { font-size: 0.76rem; color: #5a4e38; line-height: 2; font-family: 'Courier New', monospace; }
+    .syntax-ref .token { color: #a89070; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<h1>EarTrain</h1>
+<p class="subtitle">Old Time Ear Training</p>
+
+<div class="card">
+  <div class="controls">
+    <div class="control-group">
+      <label>Key</label>
+      <select id="keySelect">
+        <option value="G">G</option>
+        <option value="D" selected>D</option>
+        <option value="A">A</option>
+        <option value="C">C</option>
+        <option value="F">F</option>
+        <option value="Bb">Bb</option>
+        <option value="E">E</option>
+        <option value="B">B</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Mode</label>
+      <select id="modeSelect">
+        <option value="major">Major</option>
+        <option value="mixolydian">Mixolydian</option>
+        <option value="dorian">Dorian</option>
+        <option value="minor">Natural Minor</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>BPM</label>
+      <input type="number" id="bpmInput" value="120" min="40" max="300">
+    </div>
+    <div class="control-group">
+      <label>Beats/Bar</label>
+      <select id="beatsPerBarSelect">
+        <option value="4" selected>4/4</option>
+        <option value="3">3/4</option>
+        <option value="2">2/4</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <label>Tone</label>
+      <select id="toneSelect">
+        <option value="fiddle">Fiddle</option>
+        <option value="banjo">Banjo</option>
+        <option value="pure">Pure</option>
+      </select>
+    </div>
+    <label class="toggle-label">
+      <input type="checkbox" id="autoFillToggle">
+      Auto-fill bars
+    </label>
+  </div>
+
+  <textarea
+    class="notation-area"
+    id="notationInput"
+    placeholder="1234567 8   / d76543 2  1   / // 5-6-78 2 1d7/ b765 4 3 2 1   /"
+    spellcheck="false"
+  ></textarea>
+
+  <div class="sections-display" id="sectionsDisplay"></div>
+
+  <div class="global-actions">
+    <button class="btn btn-play" id="playBtn">▶ Play All</button>
+    <button class="btn btn-stop" id="stopBtn" style="display:none">■ Stop</button>
+    <button class="btn btn-clear" id="clearBtn">Clear</button>
+    <span class="playback-info" id="playbackInfo"></span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="syntax-ref">
+    Each character = one <span class="token">16th note</span>. &nbsp;
+    <span class="token">space</span> after a note extends it +1 sixteenth &nbsp;(<span class="token">1 </span>=8th, <span class="token">1   </span>=quarter).
+    <br>
+    <span class="token">8</span> = upper tonic (u1) &nbsp;·&nbsp;
+    <span class="token">b3</span> flat &nbsp;·&nbsp;
+    <span class="token">1-2-3</span> triplet &nbsp;·&nbsp;
+    <span class="token">d</span>/<span class="token">u</span> octave ↓/↑ (sticky) &nbsp;·&nbsp;
+    <span class="token">/</span> bar &nbsp;·&nbsp;
+    <span class="token">//</span> section &nbsp;·&nbsp;
+    <span class="token">+</span> extra 16th
+  </div>
+</div>
+
+<script>
+// ─── Constants ────────────────────────────────────────────────────────────────
+// All durations are in units of sixteenth notes.
+// 1 quarter note = 4 sixteenth notes.
+// BPM always refers to quarter notes per minute.
+
+const SCALES = {
+  major:      [0, 2, 4, 5, 7, 9, 11],
+  mixolydian: [0, 2, 4, 5, 7, 9, 10],
+  dorian:     [0, 2, 3, 5, 7, 9, 10],
+  minor:      [0, 2, 3, 5, 7, 8, 10],
+};
+
+const KEY_ROOTS = {
+  G: 392.00, D: 293.66, A: 440.00, C: 261.63,
+  F: 349.23, Bb: 466.16, E: 329.63, B: 493.88,
+};
+
+// Sixteenth notes per beat (quarter)
+const SIXTEENTHS_PER_BEAT = 4;
+
+function noteFreq(degree, octave, flat, key, mode) {
+  const semitones = SCALES[mode][degree - 1] + octave * 12 + (flat ? -1 : 0);
+  return KEY_ROOTS[key] * Math.pow(2, semitones / 12);
+}
+
+// ─── Parser ───────────────────────────────────────────────────────────────────
+// duration is always in sixteenth notes.
+// Triplet: 3 notes per quarter = each note gets 4/3 sixteenths.
+function parseNotation(input) {
+  const result = [];
+  let octave = 0, pendingFlat = false, inTriplet = false, lastNote = null;
+  let i = 0;
+
+  while (i < input.length) {
+    const ch = input[i];
+
+    if (ch === ' ' || ch === '\t') {
+      if (lastNote) lastNote.duration += 1;  // +1 sixteenth
+      i++; continue;
+    }
+
+    if (ch === '\n' || ch === '\r') {
+      result.push({ type: 'barline' });
+      lastNote = null; inTriplet = false;
+      i++; continue;
+    }
+
+    if (ch === '/') {
+      if (i + 1 < input.length && input[i + 1] === '/') {
+        result.push({ type: 'section-break' });
+        lastNote = null; inTriplet = false;
+        i += 2;
+      } else {
+        result.push({ type: 'barline' });
+        lastNote = null; inTriplet = false;
+        i++;
+      }
+      continue;
+    }
+
+    if (ch === '+') {
+      result.push({ type: 'extra-beat' });
+      lastNote = null; inTriplet = false;
+      i++; continue;
+    }
+
+    if (ch === '-') {
+      // retroactively make preceding note a triplet 16th (4/3 sixteenths)
+      if (lastNote && lastNote.duration === 1) lastNote.duration = 4/3;
+      inTriplet = true;
+      i++; continue;
+    }
+
+    if (ch === 'd') { octave -= 1; lastNote = null; pendingFlat = false; i++; continue; }
+    if (ch === 'u') { octave += 1; lastNote = null; pendingFlat = false; i++; continue; }
+    if (ch === 'b') { pendingFlat = true; lastNote = null; i++; continue; }
+
+    // '8' = upper tonic, non-sticky (only raises octave for this one note)
+    if (ch === '8') {
+      pendingFlat = false;
+      const nextIsDash = i + 1 < input.length && input[i + 1] === '-';
+      const triplet = inTriplet || nextIsDash;
+      const note = {
+        type: 'note',
+        degree: 1,
+        octave: octave + 1, flat: false,
+        duration: triplet ? 4/3 : 1,
+        triplet,
+        tripletStart: !inTriplet && nextIsDash,
+      };
+      result.push(note);
+      lastNote = note;
+      inTriplet = nextIsDash;
+      // octave unchanged — 8 does not affect subsequent notes
+      i++; continue;
+    }
+
+    if (ch >= '1' && ch <= '7') {
+      const flat = pendingFlat; pendingFlat = false;
+      const nextIsDash = i + 1 < input.length && input[i + 1] === '-';
+      const triplet = inTriplet || nextIsDash;
+      const note = {
+        type: 'note',
+        degree: parseInt(ch),
+        octave, flat,
+        duration: triplet ? 4/3 : 1,
+        triplet,
+        tripletStart: !inTriplet && nextIsDash,
+      };
+      result.push(note);
+      lastNote = note;
+      inTriplet = nextIsDash;
+      i++; continue;
+    }
+
+    result.push({ type: 'error', raw: ch });
+    lastNote = null; pendingFlat = false; inTriplet = false;
+    i++;
+  }
+
+  return result;
+}
+
+// ─── Grouping ─────────────────────────────────────────────────────────────────
+function groupTokens(tokens) {
+  const sections = [];
+  let curSection = [], curBar = [];
+
+  for (const t of tokens) {
+    if (t.type === 'section-break') {
+      curSection.push(curBar); curBar = [];
+      sections.push(curSection); curSection = [];
+    } else if (t.type === 'barline') {
+      curSection.push(curBar); curBar = [];
+    } else {
+      curBar.push(t);
+    }
+  }
+
+  if (curBar.length > 0 || curSection.length === 0) curSection.push(curBar);
+  if (curSection.some(b => b.length > 0)) sections.push(curSection);
+  return sections;
+}
+
+// ─── Beat counting (in sixteenth units) ──────────────────────────────────────
+function barUnits(bar) {
+  return bar.reduce((s, t) => {
+    if (t.type === 'note') return s + t.duration;
+    if (t.type === 'extra-beat') return s + 1;
+    return s;
+  }, 0);
+}
+
+function beatsPerBarToSixteenths(beatsPerBar) {
+  return beatsPerBar * SIXTEENTHS_PER_BEAT;
+}
+
+function fmtBeats(units, beatsPerBar) {
+  const expected = beatsPerBar;
+  const beats = units / SIXTEENTHS_PER_BEAT;
+  const beatsStr = Number.isInteger(beats * 4)
+    ? (Number.isInteger(beats) ? String(beats) : beats.toFixed(2).replace(/\.?0+$/, ''))
+    : beats.toFixed(2);
+  const cls = Math.abs(beats - expected) < 0.001 ? 'exact' : beats < expected ? 'short' : 'over';
+  return { str: `${beatsStr}/${expected}`, cls };
+}
+
+// ─── Auto-fill ────────────────────────────────────────────────────────────────
+function autoFillBar(bar, beatsPerBar) {
+  const expectedUnits = beatsPerBarToSixteenths(beatsPerBar);
+  const usedUnits = barUnits(bar);
+  const rem = expectedUnits - usedUnits;
+  if (rem <= 0.001) return { bar, fillAmount: 0 };
+
+  const copy = bar.map(t => ({ ...t }));
+  for (let i = copy.length - 1; i >= 0; i--) {
+    if (copy[i].type === 'note') {
+      copy[i] = { ...copy[i], duration: copy[i].duration + rem };
+      break;
+    }
+  }
+  return { bar: copy, fillAmount: rem };
+}
+
+// ─── Web Audio ────────────────────────────────────────────────────────────────
+let audioCtx = null;
+
+function getCtx() {
+  if (!audioCtx || audioCtx.state === 'closed')
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playNote(ctx, freq, startTime, dur, tone) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  if (tone === 'fiddle') {
+    osc.type = 'sawtooth';
+    const filt = ctx.createBiquadFilter();
+    filt.type = 'lowpass'; filt.frequency.value = 1800; filt.Q.value = 0.8;
+    osc.connect(filt); filt.connect(gain);
+  } else if (tone === 'banjo') {
+    osc.type = 'triangle'; osc.connect(gain);
+  } else {
+    osc.type = 'sine'; osc.connect(gain);
+  }
+
+  osc.frequency.value = freq;
+  const att = 0.008, rel = Math.min(0.15, dur * 0.3);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(0.35, startTime + att);
+  gain.gain.setValueAtTime(0.35, startTime + dur - rel);
+  gain.gain.linearRampToValueAtTime(0, startTime + dur);
+  gain.connect(ctx.destination);
+  osc.start(startTime);
+  osc.stop(startTime + dur + 0.02);
+}
+
+// ─── Playback engine ──────────────────────────────────────────────────────────
+let scheduledStop = null;
+let activeTimeouts = [];
+let activeSectionBtn = null;
+
+function stopPlayback() {
+  if (scheduledStop) { clearTimeout(scheduledStop); scheduledStop = null; }
+  activeTimeouts.forEach(clearTimeout); activeTimeouts = [];
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  setGlobalPlaying(false);
+  if (activeSectionBtn) {
+    activeSectionBtn.classList.remove('playing');
+    activeSectionBtn.textContent = '▶';
+    activeSectionBtn = null;
+  }
+}
+
+function setGlobalPlaying(on) {
+  document.getElementById('playBtn').style.display = on ? 'none' : '';
+  document.getElementById('stopBtn').style.display = on ? '' : 'none';
+  if (!on) { document.getElementById('playbackInfo').textContent = ''; clearActiveChips(); }
+}
+
+function clearActiveChips() {
+  document.querySelectorAll('.note-chip.active').forEach(c => c.classList.remove('active'));
+}
+
+// sixteenth: duration in seconds of one sixteenth note at current BPM
+function getSixteenth(bpm) { return (60 / bpm) / 4; }
+
+function schedulePlayback(flatNotes, chips, bpm, key, mode, tone, onDone) {
+  const ctx = getCtx();
+  const sixteenth = getSixteenth(bpm);
+  let t = ctx.currentTime + 0.05;
+  let chipIdx = 0;
+
+  for (const note of flatNotes) {
+    if (note.type === 'note') {
+      const freq = noteFreq(note.degree, note.octave, note.flat, key, mode);
+      const noteDur = note.duration * sixteenth;
+      playNote(ctx, freq, t, noteDur * 0.93, tone);
+
+      const idx = chipIdx;
+      const delay = (t - ctx.currentTime) * 1000;
+      const tid = setTimeout(() => {
+        clearActiveChips();
+        if (chips[idx]) chips[idx].classList.add('active');
+      }, delay);
+      activeTimeouts.push(tid);
+      chipIdx++;
+      t += noteDur;
+    } else if (note.type === 'extra-beat') {
+      t += sixteenth;
+    }
+  }
+
+  const totalMs = (t - ctx.currentTime) * 1000;
+  document.getElementById('playbackInfo').textContent =
+    `${flatNotes.filter(n => n.type === 'note').length} notes · ${(totalMs / 1000).toFixed(1)}s`;
+
+  scheduledStop = setTimeout(() => { clearActiveChips(); onDone(); }, totalMs + 80);
+}
+
+// ─── Rendering ────────────────────────────────────────────────────────────────
+let currentSections = [];
+
+function makeChip(note) {
+  const chip = document.createElement('span');
+  const oct = Math.max(-2, Math.min(2, note.octave));
+  chip.className = `note-chip octave-${oct}`;
+  const octLabel = note.octave > 0 ? "'".repeat(note.octave) : note.octave < 0 ? ','.repeat(-note.octave) : '';
+  chip.textContent = (note.flat ? '♭' : '') + note.degree + octLabel;
+  if (note.flat) chip.classList.add('flat');
+  if (note.triplet) chip.classList.add('triplet');
+  if (note.tripletStart) chip.classList.add('triplet-start');
+
+  // Width grows with duration: base 28px + 10px per extra sixteenth
+  const extra = Math.max(0, note.duration - 1);
+  chip.style.minWidth = (note.triplet ? 24 : 28 + Math.round(extra) * 10) + 'px';
+
+  // Dash underline for extended notes
+  const extraInt = Math.round(extra);
+  chip.dataset.durDots = extraInt > 0 ? '─'.repeat(Math.min(extraInt, 6)) : '';
+
+  chip.title = `deg ${note.flat ? '♭' : ''}${note.degree}  oct${note.octave >= 0 ? '+' : ''}${note.octave}${note.triplet ? '  triplet' : ''}  ${note.duration.toFixed(2)} sixteenths`;
+  return chip;
+}
+
+function makeFillChip(fillAmount) {
+  const chip = document.createElement('span');
+  chip.className = 'fill-chip';
+  const sixteenths = Math.round(fillAmount * 4) / 4; // round to nearest quarter
+  chip.textContent = `+${sixteenths.toFixed(sixteenths % 1 === 0 ? 0 : 1)}♪`;
+  chip.title = `Auto-fill: ${sixteenths} sixteenth(s) added to last note during playback`;
+  return chip;
+}
+
+function renderDisplay() {
+  const container = document.getElementById('sectionsDisplay');
+  container.innerHTML = '';
+
+  const beatsPerBar = parseInt(document.getElementById('beatsPerBarSelect').value);
+  const autoFill    = document.getElementById('autoFillToggle').checked;
+
+  currentSections.forEach((section, sIdx) => {
+    if (sIdx > 0) {
+      const div = document.createElement('div');
+      div.className = 'section-divider';
+      container.appendChild(div);
+    }
+
+    const block = document.createElement('div');
+    block.className = 'section-block';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'section-header';
+    const lbl = document.createElement('span');
+    lbl.className = 'section-label';
+    lbl.textContent = currentSections.length > 1 ? `Section ${sIdx + 1}` : 'Transcription';
+    const playBtn = document.createElement('button');
+    playBtn.className = 'btn-play-section';
+    playBtn.textContent = '▶';
+    playBtn.title = 'Play this section';
+    playBtn.addEventListener('click', () => playSectionIdx(sIdx, playBtn));
+    header.appendChild(lbl);
+    header.appendChild(playBtn);
+    block.appendChild(header);
+
+    // Bars
+    const barsRow = document.createElement('div');
+    barsRow.className = 'bars-row';
+
+    section.forEach((bar, bIdx) => {
+      if (bIdx > 0) {
+        const div = document.createElement('div');
+        div.className = 'bar-divider';
+        barsRow.appendChild(div);
+      }
+
+      const { bar: filledBar, fillAmount } = autoFill
+        ? autoFillBar(bar, beatsPerBar)
+        : { bar, fillAmount: 0 };
+
+      const barGroup = document.createElement('div');
+      barGroup.className = 'bar-group';
+
+      const chips = document.createElement('div');
+      chips.className = 'bar-chips';
+
+      for (const tok of bar) {   // always render original tokens
+        if (tok.type === 'note') chips.appendChild(makeChip(tok));
+        else if (tok.type === 'extra-beat') {
+          const eb = document.createElement('span');
+          eb.className = 'extra-beat-chip'; eb.textContent = '+';
+          chips.appendChild(eb);
+        } else if (tok.type === 'error') {
+          const er = document.createElement('span');
+          er.className = 'parse-error'; er.textContent = '?' + tok.raw;
+          chips.appendChild(er);
+        }
+      }
+
+      // Show fill indicator if auto-fill will add something
+      if (autoFill && fillAmount > 0.001) {
+        chips.appendChild(makeFillChip(fillAmount));
+      }
+
+      barGroup.appendChild(chips);
+
+      // Beat counter (using original bar for accurate display)
+      const units = barUnits(bar);
+      const counter = document.createElement('span');
+      counter.className = 'beat-counter';
+      if (bar.length === 0) {
+        counter.classList.add('empty');
+        counter.textContent = `—/${beatsPerBar}`;
+      } else {
+        const { str, cls } = fmtBeats(units, beatsPerBar);
+        counter.classList.add(cls);
+        counter.textContent = str + ' ♩';
+      }
+      barGroup.appendChild(counter);
+      barsRow.appendChild(barGroup);
+    });
+
+    block.appendChild(barsRow);
+    container.appendChild(block);
+  });
+}
+
+// ─── Play section ─────────────────────────────────────────────────────────────
+function playSectionIdx(sIdx, btn) {
+  stopPlayback();
+  const beatsPerBar = parseInt(document.getElementById('beatsPerBarSelect').value);
+  const autoFill = document.getElementById('autoFillToggle').checked;
+  const key  = document.getElementById('keySelect').value;
+  const mode = document.getElementById('modeSelect').value;
+  const bpm  = parseInt(document.getElementById('bpmInput').value) || 120;
+  const tone = document.getElementById('toneSelect').value;
+
+  const section = currentSections[sIdx];
+  const bars = autoFill
+    ? section.map(b => autoFillBar(b, beatsPerBar).bar)
+    : section;
+
+  const flatNotes = bars.flat().filter(t => t.type === 'note' || t.type === 'extra-beat');
+  if (!flatNotes.some(t => t.type === 'note')) return;
+
+  const sectionEl = document.querySelectorAll('.section-block')[sIdx];
+  const chips = sectionEl ? Array.from(sectionEl.querySelectorAll('.note-chip')) : [];
+
+  btn.classList.add('playing'); btn.textContent = '■';
+  activeSectionBtn = btn;
+  setGlobalPlaying(true);
+
+  schedulePlayback(flatNotes, chips, bpm, key, mode, tone, () => {
+    btn.classList.remove('playing'); btn.textContent = '▶';
+    activeSectionBtn = null;
+    setGlobalPlaying(false);
+  });
+}
+
+// ─── Play all ─────────────────────────────────────────────────────────────────
+function playAll() {
+  stopPlayback();
+  const beatsPerBar = parseInt(document.getElementById('beatsPerBarSelect').value);
+  const autoFill = document.getElementById('autoFillToggle').checked;
+  const key  = document.getElementById('keySelect').value;
+  const mode = document.getElementById('modeSelect').value;
+  const bpm  = parseInt(document.getElementById('bpmInput').value) || 120;
+  const tone = document.getElementById('toneSelect').value;
+
+  const allBars = autoFill
+    ? currentSections.flat().map(b => autoFillBar(b, beatsPerBar).bar)
+    : currentSections.flat();
+
+  const flatNotes = allBars.flat().filter(t => t.type === 'note' || t.type === 'extra-beat');
+  if (!flatNotes.some(t => t.type === 'note')) return;
+
+  const chips = Array.from(document.querySelectorAll('.note-chip'));
+  setGlobalPlaying(true);
+  schedulePlayback(flatNotes, chips, bpm, key, mode, tone, () => setGlobalPlaying(false));
+}
+
+// ─── Wire events ──────────────────────────────────────────────────────────────
+const notationInput = document.getElementById('notationInput');
+
+function refresh() {
+  try {
+    currentSections = groupTokens(parseNotation(notationInput.value));
+    renderDisplay();
+  } catch (e) {
+    console.error('EarTrain parse/render error:', e);
+    // Reset to safe state so user can keep typing
+    currentSections = [];
+    document.getElementById('sectionsDisplay').innerHTML = '';
+  }
+}
+
+notationInput.addEventListener('input', refresh);
+
+['keySelect','modeSelect','beatsPerBarSelect','toneSelect'].forEach(id =>
+  document.getElementById(id).addEventListener('change', renderDisplay)
+);
+document.getElementById('bpmInput').addEventListener('input', renderDisplay);
+document.getElementById('autoFillToggle').addEventListener('change', renderDisplay);
+
+document.getElementById('playBtn').addEventListener('click', playAll);
+document.getElementById('stopBtn').addEventListener('click', stopPlayback);
+document.getElementById('clearBtn').addEventListener('click', () => {
+  stopPlayback();
+  notationInput.value = '';
+  currentSections = [];
+  document.getElementById('sectionsDisplay').innerHTML = '';
+});
+
+notationInput.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); playAll(); }
+});
+</script>
+</body>
+</html>
